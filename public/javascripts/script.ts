@@ -1,7 +1,9 @@
-// Canvas Related 
-const canvas = document.createElement('canvas');
-const context = canvas.getContext('2d');
-const socket = io('/pong');
+import { MessageType, sendGossip } from "./backend";
+
+// Canvas Related
+const canvas = document.createElement("canvas");
+const context = canvas.getContext("2d")!;
+
 let isReferee = false;
 let paddleIndex = 0;
 
@@ -12,8 +14,8 @@ let height = 700;
 let paddleHeight = 10;
 let paddleWidth = 50;
 let paddleDiff = 25;
-let paddleX = [ 225, 225 ];
-let trajectoryX = [ 0, 0 ];
+let paddleX = [225, 225];
+let trajectoryX = [0, 0];
 let playerMoved = false;
 
 // Ball
@@ -27,11 +29,11 @@ let speedY = 2;
 let speedX = 0;
 
 // Score for Both Players
-let score = [ 0, 0 ];
+let score = [0, 0];
 
 // Create Canvas Element
 function createCanvas() {
-  canvas.id = 'canvas';
+  canvas.id = "canvas";
   canvas.width = width;
   canvas.height = height;
   document.body.appendChild(canvas);
@@ -41,23 +43,23 @@ function createCanvas() {
 // Wait for Opponents
 function renderIntro() {
   // Canvas Background
-  context.fillStyle = 'black';
+  context.fillStyle = "black";
   context.fillRect(0, 0, width, height);
 
   // Intro Text
-  context.fillStyle = 'white';
+  context.fillStyle = "white";
   context.font = "32px Courier New";
-  context.fillText("Waiting for opponent...", 20, (canvas.height / 2) - 30);
+  context.fillText("Waiting for opponent...", 20, canvas.height / 2 - 30);
 }
 
 // Render Everything on Canvas
 function renderCanvas() {
   // Canvas Background
-  context.fillStyle = 'black';
+  context.fillStyle = "black";
   context.fillRect(0, 0, width, height);
 
   // Paddle Color
-  context.fillStyle = 'white';
+  context.fillStyle = "white";
 
   // Bottom Paddle
   context.fillRect(paddleX[0], height - 20, paddleWidth, paddleHeight);
@@ -70,19 +72,19 @@ function renderCanvas() {
   context.setLineDash([4]);
   context.moveTo(0, 350);
   context.lineTo(500, 350);
-  context.strokeStyle = 'grey';
+  context.strokeStyle = "grey";
   context.stroke();
 
   // Ball
   context.beginPath();
-  context.arc(ballX, ballY, ballRadius, 2 * Math.PI, false);
-  context.fillStyle = 'white';
+  context.arc(ballX, ballY, ballRadius, 2 * Math.PI, 2 * Math.PI);
+  context.fillStyle = "white";
   context.fill();
 
   // Score
   context.font = "32px Courier New";
-  context.fillText(score[0], 20, (canvas.height / 2) + 50);
-  context.fillText(score[1], 20, (canvas.height / 2) - 30);
+  context.fillText(score[0].toString(), 20, canvas.height / 2 + 50);
+  context.fillText(score[1].toString(), 20, canvas.height / 2 - 30);
 }
 
 // Reset Ball to Center
@@ -90,11 +92,7 @@ function ballReset() {
   ballX = width / 2;
   ballY = height / 2;
   speedY = 3;
-  socket.emit('ballMove', {
-    ballX,
-    ballY,
-    score,
-  });
+  sendGossip({ type: MessageType.BallMove, ballX, ballY, score });
 }
 
 // Adjust Ball Movement
@@ -105,11 +103,8 @@ function ballMove() {
   if (playerMoved) {
     ballX += speedX;
   }
-  socket.emit('ballMove', {
-    ballX,
-    ballY,
-    score,
-  });
+
+  sendGossip({ type: MessageType.BallMove, ballX, ballY, score });
 }
 
 // Determine What Ball Bounces Off, Score Points, Reset Ball
@@ -177,49 +172,46 @@ function animate() {
 function loadGame() {
   createCanvas();
   renderIntro();
-  socket.emit('ready');
+  sendGossip({ type: MessageType.Ready });
 }
 
 function startGame() {
   paddleIndex = isReferee ? 0 : 1;
   window.requestAnimationFrame(animate);
-  canvas.addEventListener('mousemove', (e) => {
+  canvas.addEventListener("mousemove", (e) => {
     playerMoved = true;
     paddleX[paddleIndex] = e.offsetX;
     if (paddleX[paddleIndex] < 0) {
       paddleX[paddleIndex] = 0;
     }
-    if (paddleX[paddleIndex] > (width - paddleWidth)) {
+    if (paddleX[paddleIndex] > width - paddleWidth) {
       paddleX[paddleIndex] = width - paddleWidth;
     }
-    socket.emit('paddleMove', {
+    sendGossip({
+      type: MessageType.PaddleMove,
       xPosition: paddleX[paddleIndex],
     });
     // Hide Cursor
-    canvas.style.cursor = 'none';
+    canvas.style.cursor = "none";
   });
 }
 
 // On Load
 loadGame();
 
-socket.on('connect', () => {
-  console.log('Connected as...', socket.id);
-});
+export function doStartGame(refereeId) {
+  console.log("Referee is", refereeId);
 
-socket.on('startGame', (refereeId) => {
-  console.log('Referee is', refereeId);
-
-  isReferee = socket.id === refereeId;
+  isReferee = window.webxdc.selfAddr === refereeId;
   startGame();
-});
+}
 
-socket.on('paddleMove', (paddleData) => {
+export function paddleMove({ xPosition }) {
   // Toggle 1 into 0, and 0 into 1
   const opponentPaddleIndex = 1 - paddleIndex;
-  paddleX[opponentPaddleIndex] = paddleData.xPosition;
-});
+  paddleX[opponentPaddleIndex] = xPosition;
+}
 
-socket.on('ballMove', (ballData) => {
+export function doBallMove(ballData): void {
   ({ ballX, ballY, score } = ballData);
-});
+}
