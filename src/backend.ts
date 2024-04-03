@@ -1,7 +1,6 @@
 import { doBallMove, paddleMove, doStartGame } from "./script";
 
 let readyPlayerCount = 0;
-let playing = false;
 
 export enum MessageType {
   Ready,
@@ -89,7 +88,6 @@ window.webxdc.setEphemeralUpdateListener(function (update: messages) {
     doBallMove(update);
   } else if (isDisconnectMessage(update)) {
     console.log("Player disconnected");
-    playing = false;
   }
 });
 

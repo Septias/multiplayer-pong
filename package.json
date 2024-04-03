@@ -1,13 +1,15 @@
 {
-  "name": "multi-player-pon",
-  "main": "server.js",
+  "name": "multiplayer-pong",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "run": "node server.js"
+    "dev": "vite",
+    "build": "tsc && vite build && ./create-xdc.sh",
+    "preview": "vite preview"
   },
-  "author": "",
-  "dependencies": {
-    "express": "^4.18.2",
-    "socket.io": "^4.7.2"
+  "devDependencies": {
+    "typescript": "^5.2.2",
+    "vite": "^5.2.0"
   }
 }

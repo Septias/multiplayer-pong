@@ -77,7 +77,7 @@ function renderCanvas() {
 
   // Ball
   context.beginPath();
-  context.arc(ballX, ballY, ballRadius, 2 * Math.PI, 2 * Math.PI);
+  context.arc(ballX, ballY, ballRadius, 2 * Math.PI, 0);
   context.fillStyle = "white";
   context.fill();
 
@@ -199,19 +199,19 @@ function startGame() {
 // On Load
 loadGame();
 
-export function doStartGame(refereeId) {
+export function doStartGame(refereeId: any) {
   console.log("Referee is", refereeId);
 
   isReferee = window.webxdc.selfAddr === refereeId;
   startGame();
 }
 
-export function paddleMove({ xPosition }) {
+export function paddleMove({ xPosition }: any) {
   // Toggle 1 into 0, and 0 into 1
   const opponentPaddleIndex = 1 - paddleIndex;
   paddleX[opponentPaddleIndex] = xPosition;
 }
 
-export function doBallMove(ballData): void {
+export function doBallMove(ballData: any): void {
   ({ ballX, ballY, score } = ballData);
 }
