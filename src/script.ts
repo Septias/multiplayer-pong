@@ -1,10 +1,18 @@
-import { MessageType, sendGossip } from "./backend";
+import {
+  MessageType,
+  PaddleMoveMessage,
+  game_over,
+  sendGossip,
+  set_ready,
+} from "./backend";
 
 // Canvas Related
 const canvas = document.createElement("canvas");
 const context = canvas.getContext("2d")!;
 
-let isReferee = false;
+let referee = "";
+let opponent = "";
+
 let paddleIndex = 0;
 
 let width = 500;
@@ -124,8 +132,8 @@ function ballBoundaries() {
       if (playerMoved) {
         speedY += 1;
         // Max Speed
-        if (speedY > 5) {
-          speedY = 5;
+        if (speedY > 4) {
+          speedY = 4;
         }
       }
       ballDirection = -ballDirection;
@@ -156,62 +164,93 @@ function ballBoundaries() {
       score[0]++;
     }
   }
+  if (score[0] >= 5 || score[1] >= 5) {
+    game_over(
+      score[0] > score[1] ? referee : opponent,
+      score[0] < score[1] ? referee : opponent
+    );
+  }
 }
-
+var req: number;
 // Called Every Frame
 function animate() {
-  if (isReferee) {
+  if (referee == window.webxdc.selfAddr) {
     ballMove();
     ballBoundaries();
   }
   renderCanvas();
-  window.requestAnimationFrame(animate);
+  req = window.requestAnimationFrame(animate);
 }
 
 // Load Game, Reset Everything
 function loadGame() {
   createCanvas();
   renderIntro();
-  sendGossip({ type: MessageType.Ready });
+  set_ready();
 }
 
 function startGame() {
-  paddleIndex = isReferee ? 0 : 1;
+  if (referee == window.webxdc.selfAddr) {
+    paddleIndex = 0;
+  } else if (opponent == window.webxdc.selfAddr) {
+    paddleIndex = 1;
+  }
+
   window.requestAnimationFrame(animate);
-  canvas.addEventListener("mousemove", (e) => {
-    playerMoved = true;
-    paddleX[paddleIndex] = e.offsetX;
-    if (paddleX[paddleIndex] < 0) {
-      paddleX[paddleIndex] = 0;
-    }
-    if (paddleX[paddleIndex] > width - paddleWidth) {
-      paddleX[paddleIndex] = width - paddleWidth;
-    }
-    sendGossip({
-      type: MessageType.PaddleMove,
-      xPosition: paddleX[paddleIndex],
+  if (referee == window.webxdc.selfAddr || opponent == window.webxdc.selfAddr) {
+    canvas.addEventListener("mousemove", (e) => {
+      playerMoved = true;
+      paddleX[paddleIndex] = e.offsetX;
+      if (paddleX[paddleIndex] < 0) {
+        paddleX[paddleIndex] = 0;
+      }
+      if (paddleX[paddleIndex] > width - paddleWidth) {
+        paddleX[paddleIndex] = width - paddleWidth;
+      }
+      sendGossip({
+        type: MessageType.PaddleMove,
+        xPosition: paddleX[paddleIndex],
+        player: paddleIndex,
+      });
+      // Hide Cursor
+      canvas.style.cursor = "none";
     });
-    // Hide Cursor
-    canvas.style.cursor = "none";
-  });
+  }
 }
 
 // On Load
 loadGame();
 
-export function doStartGame(refereeId: any) {
-  console.log("Referee is", refereeId);
-
-  isReferee = window.webxdc.selfAddr === refereeId;
+export function doStartGame(refereeId: string, opponentId: string) {
+  console.log("players: ", refereeId, opponent);
+  
+  referee = refereeId;
+  opponent = opponentId;
   startGame();
 }
 
-export function paddleMove({ xPosition }: any) {
-  // Toggle 1 into 0, and 0 into 1
-  const opponentPaddleIndex = 1 - paddleIndex;
-  paddleX[opponentPaddleIndex] = xPosition;
+export function doPaddleMove({ xPosition, player }: PaddleMoveMessage) {
+  paddleX[player] = xPosition;
 }
 
 export function doBallMove(ballData: any): void {
   ({ ballX, ballY, score } = ballData);
+}
+
+export function doEndGame() {
+  referee = "";
+  opponent = "";
+  paddleIndex = 0;
+  paddleX = [225, 225];
+  ballX = 250;
+  ballY = 350;
+  ballRadius = 5;
+  ballDirection = 1;
+
+  speedY = 2;
+  speedX = 0;
+  score = [0, 0];
+  window.cancelAnimationFrame(req);
+  renderIntro();
+  set_ready();
 }

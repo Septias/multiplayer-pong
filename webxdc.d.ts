@@ -1,3 +1,8 @@
+//@ts-check
+
+// This file originates from
+// https://github.com/webxdc/webxdc_docs/blob/master/webxdc.d.ts
+
 type SendingStatusUpdate<T> = {
   /** the payload, deserialized json:
    * any javascript primitive, array or object. */
@@ -16,10 +21,6 @@ type SendingStatusUpdate<T> = {
   summary?: string;
 };
 
-type SendingEphemeralStatusUpdate<T> = {
-  payload: T;
-};
-
 type ReceivedStatusUpdate<T> = {
   /** the payload, deserialized json */
   payload: T;
@@ -34,11 +35,6 @@ type ReceivedStatusUpdate<T> = {
   document?: string;
   /** optional, short text, shown beside the webxdc's icon. */
   summary?: string;
-};
-
-type ReceivedEphemeralStatusUpdate<T> = {
-  /** the payload, deserialized json */
-  payload: T;
 };
 
 type XDCFile = {
@@ -88,12 +84,10 @@ interface Webxdc<T> {
   ): Promise<void>;
 
   /**
-   * set a listener for new _ephemeral_ status updates.
-   * Note that own status updates, that you send with {@link sendUpdate}, also trigger this method (TODO: can we obmit this?)
-   * */
-  setEphemeralUpdateListener(
-    cb: (statusUpdate: ReceivedEphemeralStatusUpdate<T>) => void,
-  ): void;
+   * Set a listener for _ephemeral_ status updates.
+   * Own status updates are not received.
+   */
+  setEphemeralUpdateListener(cb: (payload: T) => void): void;
 
   /**
    * @deprecated See {@link setUpdateListener|`setUpdateListener()`}.
@@ -108,9 +102,9 @@ interface Webxdc<T> {
 
   /**
    * Send an ephemeral update to another peer.
-   * @param payload Data that can be serialized with JSON.stringify.
+   * @param payload Data that can be serialized with `JSON.stringify`.
    */
-  sendEphemeralUpdate(payload: SendingEphemeralStatusUpdate<T>): void;
+  sendEphemeralUpdate(payload: T): void;
 
   /**
    * Send a message with file, text or both to a chat.
@@ -141,4 +135,21 @@ interface Webxdc<T> {
   }): Promise<File[]>;
 }
 
+////////// ANCHOR: global
+declare global {
+  interface Window {
+    webxdc: Webxdc<any>;
+  }
+}
+////////// ANCHOR_END: global
+
 export { SendingStatusUpdate, ReceivedStatusUpdate, Webxdc, XDCFile };
+
+/* Types for the Simulator */
+declare global {
+  interface Window {
+    addXdcPeer: () => void;
+    clearXdcStorage: () => void;
+    alterXdcApp: () => void;
+  }
+}

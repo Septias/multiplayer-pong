@@ -24,9 +24,10 @@ window.webxdc = (() => {
       updateListener(update);
     } else if (event.key === ephemeralUpdateKey) {
       var updates = JSON.parse(event.newValue);
-      var update = updates[updates.length - 1];
-      console.log("[Webxdc] " + JSON.stringify(update));
-      ephemeralUpdatListener(update);
+      var [sender, update] = updates[updates.length - 1];
+      if (window.webxdc.selfAddr !== sender) {
+        ephemeralUpdatListener(update);
+      }
     }
   });
 
@@ -57,7 +58,7 @@ window.webxdc = (() => {
       return Promise.resolve();
     },
     setEphemeralUpdateListener: (cb) => {
-      localStorage.setItem(ephemeralUpdateKey, JSON.stringify([]))
+      localStorage.setItem(ephemeralUpdateKey, JSON.stringify([]));
       ephemeralUpdatListener = cb;
     },
     getAllUpdates: () => {
@@ -84,10 +85,9 @@ window.webxdc = (() => {
     },
     sendEphemeralUpdate: (payload) => {
       let updates = getEphemeralUpdate();
-      updates.push(payload);
+      updates.push([window.webxdc.selfAddr, payload]);
       window.localStorage.setItem(ephemeralUpdateKey, JSON.stringify(updates));
-      
-    }, 
+    },
     sendToChat: async (content) => {
       if (!content.file && !content.text) {
         alert("🚨 Error: either file or text need to be set. (or both)");
@@ -267,8 +267,8 @@ window.alterXdcApp = () => {
         root.innerHTML =
           '<img src="' + name + '" style="' + styleAppIcon + '">';
         controlPanel.insertBefore(root.firstChild, controlPanel.childNodes[1]);
-        
-        var pageIcon = document.createElement('link');
+
+        var pageIcon = document.createElement("link");
         pageIcon.rel = "icon";
         pageIcon.href = name;
         document.head.append(pageIcon);
