@@ -23,8 +23,7 @@ window.webxdc = (() => {
       console.log("[Webxdc] " + JSON.stringify(update));
       updateListener(update);
     } else if (event.key === ephemeralUpdateKey) {
-      var updates = JSON.parse(event.newValue);
-      var [sender, update] = updates[updates.length - 1];
+      var [sender, update] = JSON.parse(event.newValue);
       if (window.webxdc.selfAddr !== sender) {
         ephemeralUpdatListener(update);
       }
@@ -58,7 +57,6 @@ window.webxdc = (() => {
       return Promise.resolve();
     },
     setEphemeralUpdateListener: (cb) => {
-      localStorage.setItem(ephemeralUpdateKey, JSON.stringify([]));
       ephemeralUpdatListener = cb;
     },
     getAllUpdates: () => {
@@ -85,8 +83,10 @@ window.webxdc = (() => {
     },
     sendEphemeralUpdate: (payload) => {
       let updates = getEphemeralUpdate();
-      updates.push([window.webxdc.selfAddr, payload]);
-      window.localStorage.setItem(ephemeralUpdateKey, JSON.stringify(updates));
+      window.localStorage.setItem(
+        ephemeralUpdateKey,
+        JSON.stringify([window.webxdc.selfAddr, payload])
+      );
     },
     sendToChat: async (content) => {
       if (!content.file && !content.text) {

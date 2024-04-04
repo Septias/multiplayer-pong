@@ -73,9 +73,10 @@ let referee: string = window.webxdc.selfAddr;
 
 window.webxdc.setEphemeralUpdateListener(function (update: messages) {
   if (isReadyMessage(update)) {
+    if (players.find((p) => p === update.player)) {
+      return;
+    }
     players.push(update.player);
-    console.log("Player ready", players);
-
     if (referee == window.webxdc.selfAddr && players.length >= 2) {
       let opponents = players.splice(0, 2);
       sendGossip({
@@ -91,7 +92,6 @@ window.webxdc.setEphemeralUpdateListener(function (update: messages) {
     referee = update.refereeId;
     doStartGame(update.refereeId, update.opponent);
   } else if (isPaddleMoveMessage(update)) {
-    referee = "";
     doPaddleMove(update);
   } else if (isBallMoveMessage(update)) {
     referee = "";
@@ -125,9 +125,8 @@ export function set_ready() {
 export function game_over(winner: string, loser: string) {
   let info = `${winner} won against ${loser}`;
   window.webxdc.sendUpdate({ info, payload: null }, info);
-  sendGossip({ type: MessageType.GameOver, winner });
   doEndGame();
-
+  sendGossip({ type: MessageType.GameOver, winner });
   if (players.length >= 2) {
     let opponents = players.splice(0, 2);
     console.log("Refree started new game between", opponents);

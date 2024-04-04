@@ -99,7 +99,6 @@ function renderCanvas() {
 function ballReset() {
   ballX = width / 2;
   ballY = height / 2;
-  speedY = 3;
   sendGossip({ type: MessageType.BallMove, ballX, ballY, score });
 }
 
@@ -152,8 +151,8 @@ function ballBoundaries() {
       if (playerMoved) {
         speedY += 1;
         // Max Speed
-        if (speedY > 5) {
-          speedY = 5;
+        if (speedY > 4) {
+          speedY = 4;
         }
       }
       ballDirection = -ballDirection;
@@ -189,32 +188,32 @@ function loadGame() {
   set_ready();
 }
 
+function listener(e: any) {
+  playerMoved = true;
+  paddleX[paddleIndex] = e.offsetX;
+  if (paddleX[paddleIndex] < 0) {
+    paddleX[paddleIndex] = 0;
+  }
+  if (paddleX[paddleIndex] > width - paddleWidth) {
+    paddleX[paddleIndex] = width - paddleWidth;
+  }
+  sendGossip({
+    type: MessageType.PaddleMove,
+    xPosition: paddleX[paddleIndex],
+    player: paddleIndex,
+  });
+  // Hide Cursor
+  canvas.style.cursor = "none";
+}
 function startGame() {
   if (referee == window.webxdc.selfAddr) {
     paddleIndex = 0;
   } else if (opponent == window.webxdc.selfAddr) {
     paddleIndex = 1;
   }
-
   window.requestAnimationFrame(animate);
   if (referee == window.webxdc.selfAddr || opponent == window.webxdc.selfAddr) {
-    canvas.addEventListener("mousemove", (e) => {
-      playerMoved = true;
-      paddleX[paddleIndex] = e.offsetX;
-      if (paddleX[paddleIndex] < 0) {
-        paddleX[paddleIndex] = 0;
-      }
-      if (paddleX[paddleIndex] > width - paddleWidth) {
-        paddleX[paddleIndex] = width - paddleWidth;
-      }
-      sendGossip({
-        type: MessageType.PaddleMove,
-        xPosition: paddleX[paddleIndex],
-        player: paddleIndex,
-      });
-      // Hide Cursor
-      canvas.style.cursor = "none";
-    });
+    canvas.addEventListener("mousemove", listener);
   }
 }
 
@@ -222,8 +221,7 @@ function startGame() {
 loadGame();
 
 export function doStartGame(refereeId: string, opponentId: string) {
-  console.log("players: ", refereeId, opponent);
-  
+  console.log(`referee: ${refereeId} \n player: ${opponentId}`);
   referee = refereeId;
   opponent = opponentId;
   startGame();
@@ -251,6 +249,7 @@ export function doEndGame() {
   speedX = 0;
   score = [0, 0];
   window.cancelAnimationFrame(req);
+  canvas.removeEventListener("mousemove", listener);
   renderIntro();
   set_ready();
 }
