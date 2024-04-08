@@ -185,7 +185,6 @@ function animate() {
 function loadGame() {
   createCanvas();
   renderIntro();
-  set_ready();
 }
 
 function listener(e: any) {

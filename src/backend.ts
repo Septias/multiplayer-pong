@@ -71,39 +71,44 @@ type messages =
 let players: string[] = [];
 let referee: string = window.webxdc.selfAddr;
 
-window.webxdc.setEphemeralUpdateListener(function (update: messages) {
-  if (isReadyMessage(update)) {
-    if (players.find((p) => p === update.player)) {
-      return;
+window.webxdc
+  .setEphemeralUpdateListener(function (update: messages) {
+    if (isReadyMessage(update)) {
+      if (players.find((p) => p === update.player)) {
+        return;
+      }
+      players.push(update.player);
+      if (referee == window.webxdc.selfAddr && players.length >= 2) {
+        let opponents = players.splice(0, 2);
+        sendGossip({
+          type: MessageType.StartGame,
+          refereeId: opponents[0],
+          opponent: opponents[1],
+        });
+        referee = opponents[0];
+        doStartGame(opponents[0], opponents[1]);
+      }
+    } else if (isStartGameMessage(update)) {
+      console.log("Game starting");
+      referee = update.refereeId;
+      doStartGame(update.refereeId, update.opponent);
+    } else if (isPaddleMoveMessage(update)) {
+      doPaddleMove(update);
+    } else if (isBallMoveMessage(update)) {
+      referee = "";
+      doBallMove(update);
+    } else if (isGameOverMessage(update)) {
+      referee = "";
+      console.log("Game Over");
+      doEndGame();
+    } else {
+      console.log("Unknown message", update);
     }
-    players.push(update.player);
-    if (referee == window.webxdc.selfAddr && players.length >= 2) {
-      let opponents = players.splice(0, 2);
-      sendGossip({
-        type: MessageType.StartGame,
-        refereeId: opponents[0],
-        opponent: opponents[1],
-      });
-      referee = opponents[0];
-      doStartGame(opponents[0], opponents[1]);
-    }
-  } else if (isStartGameMessage(update)) {
-    console.log("Game starting");
-    referee = update.refereeId;
-    doStartGame(update.refereeId, update.opponent);
-  } else if (isPaddleMoveMessage(update)) {
-    doPaddleMove(update);
-  } else if (isBallMoveMessage(update)) {
-    referee = "";
-    doBallMove(update);
-  } else if (isGameOverMessage(update)) {
-    referee = "";
-    console.log("Game Over");
-    doEndGame();
-  } else {
-    console.log("Unknown message", update);
-  }
-});
+  })
+  .then(() => {
+    console.log("ready");
+    set_ready();
+  });
 
 // let timeout = false;
 export function sendGossip(message: messages) {
