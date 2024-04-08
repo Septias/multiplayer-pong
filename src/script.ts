@@ -137,7 +137,7 @@ function ballBoundaries() {
       }
       ballDirection = -ballDirection;
       trajectoryX[0] = ballX - (paddleX[0] + paddleDiff);
-      speedX = trajectoryX[0] * 0.3;
+      speedX = trajectoryX[0] * 0.2;
     } else {
       // Reset Ball, add to Computer Score
       ballReset();
@@ -157,7 +157,7 @@ function ballBoundaries() {
       }
       ballDirection = -ballDirection;
       trajectoryX[1] = ballX - (paddleX[1] + paddleDiff);
-      speedX = trajectoryX[1] * 0.3;
+      speedX = trajectoryX[1] * 0.2;
     } else {
       ballReset();
       score[0]++;
