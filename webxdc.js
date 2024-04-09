@@ -83,10 +83,9 @@ window.webxdc = (() => {
       updateListener(_update);
     },
     sendEphemeralUpdate: (payload) => {
-      let updates = getEphemeralUpdate();
       window.localStorage.setItem(
         ephemeralUpdateKey,
-        JSON.stringify([window.webxdc.selfAddr, payload])
+        JSON.stringify([window.webxdc.selfAddr, payload, Date.now()])
       );
     },
     sendToChat: async (content) => {
