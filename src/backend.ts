@@ -70,6 +70,11 @@ type messages =
 
 let players: string[] = [];
 let referee: string = window.webxdc.selfAddr;
+let timeout = false;
+
+setTimeout(() => {
+  timeout = true;
+}, 1000);
 
 window.webxdc
   .setEphemeralUpdateListener(function (update: messages) {
@@ -78,7 +83,8 @@ window.webxdc
         return;
       }
       players.push(update.player);
-      if (referee == window.webxdc.selfAddr && players.length >= 2) {
+      console.log("Player ready", update.player);
+      if (referee == window.webxdc.selfAddr && players.length >= 2 && timeout) {
         let opponents = players.splice(0, 2);
         sendGossip({
           type: MessageType.StartGame,
@@ -106,7 +112,7 @@ window.webxdc
     }
   })
   .then(() => {
-    console.log("ready");
+    console.log("Game ready");
     set_ready();
   });
 
