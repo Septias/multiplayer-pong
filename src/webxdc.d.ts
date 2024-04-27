@@ -1,12 +1,7 @@
-//@ts-check
-
-// This file originates from
-// https://github.com/webxdc/webxdc_docs/blob/master/webxdc.d.ts
-
-type SendingStatusUpdate<T> = {
+type SendingStatusUpdate<PayloadType> = {
   /** the payload, deserialized json:
    * any javascript primitive, array or object. */
-  payload: T;
+  payload: PayloadType;
   /** optional, short, informational message that will be added to the chat,
    * eg. "Alice voted" or "Bob scored 123 in MyGame";
    * usually only one line of text is shown,
@@ -21,9 +16,9 @@ type SendingStatusUpdate<T> = {
   summary?: string;
 };
 
-type ReceivedStatusUpdate<T> = {
+type ReceivedStatusUpdate<PayloadType> = {
   /** the payload, deserialized json */
-  payload: T;
+  payload: PayloadType;
   /** the serial number of this update. Serials are larger than 0 and newer serials have higher numbers */
   serial: number;
   /** the maximum serial currently known */
@@ -65,7 +60,26 @@ type SendOptions =
       text: string;
     };
 
-interface Webxdc<T> {
+/**
+ * A listener for realtime data.
+ */
+export class RealtimeListener {
+  private listener: (data: Uint8Array) => void;
+  private trashed: boolean;
+
+  /* Whether the realtime channel was left */
+  is_trashed(): boolean;
+  /* Receive data from the realtime channel */
+  receive(data: Uint8Array): void;
+  /* Set a listener for the realtime channel */
+  setListener(listener: (data: Uint8Array) => void): void;
+  /* Send data over the realtime channel */
+  send(data: Uint8Array): void;
+  /* Leave the realtime channel */
+  leave(): void;
+}
+
+interface Webxdc<StatusPayload> {
   /** Returns the peer's own address.
    *  This is esp. useful if you want to differ between different peers - just send the address along with the payload,
    *  and, if needed, compare the payload addresses against selfAddr() later on. */
@@ -79,32 +93,33 @@ interface Webxdc<T> {
    * @returns promise that resolves when the listener has processed all the update messages known at the time when `setUpdateListener` was called.
    * */
   setUpdateListener(
-    cb: (statusUpdate: ReceivedStatusUpdate<T>) => void,
+    cb: (statusUpdate: ReceivedStatusUpdate<StatusPayload>) => void,
     serial?: number
   ): Promise<void>;
 
   /**
-   * Set a listener for _ephemeral_ status updates.
-   * Own status updates are not received.
+   * Join a realtime channel.
    */
-  setEphemeralUpdateListener(cb: (payload: T) => void): Promise<void>;
+  joinRealtimeChannel(): RealtimeListener;
 
   /**
    * @deprecated See {@link setUpdateListener|`setUpdateListener()`}.
    */
-  getAllUpdates(): Promise<ReceivedStatusUpdate<T>[]>;
+  getAllUpdates(): Promise<ReceivedStatusUpdate<StatusPayload>[]>;
   /**
    * Webxdc are usually shared in a chat and run independently on each peer. To get a shared status, the peers use sendUpdate() to send updates to each other.
    * @param update status update to send
    * @param description short, human-readable description what this update is about. this is shown eg. as a fallback text in an email program.
    */
-  sendUpdate(update: SendingStatusUpdate<T>, description: string): void;
+  sendUpdate(
+    update: SendingStatusUpdate<StatusPayload>,
+    description: string
+  ): void;
 
   /**
-   * Send an ephemeral update to another peer.
-   * @param payload Data that can be serialized with `JSON.stringify`.
+   * Send realtime data.
    */
-  sendEphemeralUpdate(payload: T): void;
+  sendRealtimeData(payload: Uint8Array): void;
 
   /**
    * Send a message with file, text or both to a chat.

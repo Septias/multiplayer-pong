@@ -70,62 +70,58 @@ type messages =
 
 let players: string[] = [];
 let referee: string = window.webxdc.selfAddr;
-let timeout = false;
 
-setTimeout(() => {
-  timeout = true;
-}, 1000);
+let realtime = window.webxdc.joinRealtimeChannel();
 
-window.webxdc
-  .setEphemeralUpdateListener(function (update: messages) {
-    if (isReadyMessage(update)) {
-      if (players.find((p) => p === update.player)) {
-        return;
-      }
-      players.push(update.player);
-      console.log("Player ready", update.player);
-      if (referee == window.webxdc.selfAddr && players.length >= 2 && timeout) {
-        let opponents = players.splice(0, 2);
-        sendGossip({
-          type: MessageType.StartGame,
-          refereeId: opponents[0],
-          opponent: opponents[1],
-        });
-        referee = opponents[0];
-        doStartGame(opponents[0], opponents[1]);
-      }
-    } else if (isStartGameMessage(update)) {
-      console.log("Game starting");
-      referee = update.refereeId;
-      doStartGame(update.refereeId, update.opponent);
-    } else if (isPaddleMoveMessage(update)) {
-      doPaddleMove(update);
-    } else if (isBallMoveMessage(update)) {
-      referee = "";
-      doBallMove(update);
-    } else if (isGameOverMessage(update)) {
-      referee = "";
-      console.log("Game Over");
-      doEndGame();
-    } else {
-      console.log("Unknown message", update);
+players.push(window.webxdc.selfAddr);
+let interval = setInterval(() => {
+  sendGossip({ type: MessageType.Ready, player: window.webxdc.selfAddr });
+}, 500);
+
+let enc = new TextEncoder();
+let dec = new TextDecoder();
+
+realtime.setListener((enc_msg: Uint8Array) => {
+  let update = JSON.parse(dec.decode(enc_msg));
+  clearInterval(interval);
+
+  if (isReadyMessage(update)) {
+    // stop interval
+    if (players.find((p) => p === update.player)) {
+      return;
     }
-  })
-  .then(() => {
-    console.log("Game ready");
-    set_ready();
-  });
-
-// let timeout = false;
-export function sendGossip(message: messages) {
-  /* if (timeout) {
-    return;
+    players.push(update.player);
+    console.log("Player ready", update.player);
+    if (referee == window.webxdc.selfAddr && players.length >= 2 ) {
+      let opponents = players.splice(0, 2);
+      sendGossip({
+        type: MessageType.StartGame,
+        refereeId: opponents[0],
+        opponent: opponents[1],
+      });
+      referee = opponents[0];
+      doStartGame(opponents[0], opponents[1]);
+    }
+  } else if (isStartGameMessage(update)) {
+    console.log("Game starting");
+    referee = update.refereeId;
+    doStartGame(update.refereeId, update.opponent);
+  } else if (isPaddleMoveMessage(update)) {
+    doPaddleMove(update);
+  } else if (isBallMoveMessage(update)) {
+    referee = "";
+    doBallMove(update);
+  } else if (isGameOverMessage(update)) {
+    referee = "";
+    console.log("Game Over");
+    doEndGame();
+  } else {
+    console.log("Unknown message", update);
   }
-  timeout = true;
-  setTimeout(() => {
-    timeout = false;
-  }, 5); */
-  window.webxdc.sendEphemeralUpdate(message);
+});
+
+export function sendGossip(message: messages) {
+  realtime.send(enc.encode(JSON.stringify(message)));
 }
 
 export function set_ready() {
