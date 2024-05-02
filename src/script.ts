@@ -50,7 +50,6 @@ function createCanvas() {
 
 // Wait for Opponents
 function renderIntro() {
-  console.log('rendering intro');
   // Canvas Background
   context.fillStyle = "black";
   context.fillRect(0, 0, width, height);
@@ -63,9 +62,6 @@ function renderIntro() {
 
 // Render Everything on Canvas
 function renderCanvas() {
-  console.log("rendering canvas");
-  
-
   // Canvas Background
   context.fillStyle = "black";
   context.fillRect(0, 0, width, height);
