@@ -72,9 +72,7 @@ let players: string[] = [];
 let referee: string = window.webxdc.selfAddr;
 let opponent: string = "";
 
-setTimeout(() => {
-  timeout = true;
-}, 1000);
+let realtime = window.webxdc.joinRealtimeChannel();
 
 players.push(window.webxdc.selfAddr);
 let interval = setInterval(() => {
@@ -140,16 +138,8 @@ realtime.setListener((enc_msg: Uint8Array) => {
   }
 });
 
-// let timeout = false;
 export function sendGossip(message: messages) {
-  /* if (timeout) {
-    return;
-  }
-  timeout = true;
-  setTimeout(() => {
-    timeout = false;
-  }, 5); */
-  window.webxdc.sendEphemeralUpdate(message);
+  realtime.send(enc.encode(JSON.stringify(message)));
 }
 
 export function set_ready() {
