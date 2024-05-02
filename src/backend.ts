@@ -74,27 +74,30 @@ let referee: string = window.webxdc.selfAddr;
 let opponent: string = "";
 
 let realtime = window.webxdc.joinRealtimeChannel();
-
-players.push(window.webxdc.selfAddr);
-let interval = setInterval(() => {
-  sendGossip({ type: MessageType.Ready, player: window.webxdc.selfAddr });
-}, 500);
+let timout: number; // used to timeout if referee leaves (edge case)
+let playing = false;
 
 let enc = new TextEncoder();
 let dec = new TextDecoder();
 
-let timout;
+players.push(window.webxdc.selfAddr);
+sendGossip({ type: MessageType.Ready, player: window.webxdc.selfAddr });
+
+let interval = setInterval(() => {
+  sendGossip({ type: MessageType.Ready, player: window.webxdc.selfAddr });
+}, 500);
 
 function maybe_start_game() {
-  if (referee == window.webxdc.selfAddr && players.length >= 2) {
+  if (referee == window.webxdc.selfAddr && players.length >= 2 && !playing) {
     let opponents = players.splice(0, 2);
     sendGossip({
       type: MessageType.StartGame,
       refereeId: opponents[0],
       opponent: opponents[1],
-      queue: players
+      queue: players,
     });
     referee = opponents[0];
+    playing = true;
     doStartGame(opponents[0], opponents[1]);
   }
 }
@@ -108,10 +111,11 @@ realtime.setListener((enc_msg: Uint8Array) => {
     if (players.find((p) => p === update.player)) {
       return;
     }
+    console.log("Player added", update.player);
     players.push(update.player);
     maybe_start_game();
-    console.log("Player ready", update.player);
   } else if (isStartGameMessage(update)) {
+    playing = true;
     console.log("Game starting");
     referee = update.refereeId;
     opponent = update.opponent;
@@ -135,7 +139,6 @@ realtime.setListener((enc_msg: Uint8Array) => {
     referee = "";
     doBallMove(update);
   } else if (isGameOverMessage(update)) {
-    referee = "";
     console.log("Game Over");
     doEndGame();
   } else {
@@ -164,10 +167,11 @@ export function game_over(winner: string, loser: string) {
       type: MessageType.StartGame,
       refereeId: opponents[0],
       opponent: opponents[1],
-      queue: players
+      queue: players,
     });
     doStartGame(opponents[0], opponents[1]);
   } else {
+    playing = false;
     console.log("Waiting for players");
   }
 }
