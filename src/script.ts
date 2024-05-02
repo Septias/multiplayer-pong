@@ -38,6 +38,7 @@ let speedX = 0;
 
 // Score for Both Players
 let score = [0, 0];
+let exit = false;
 
 // Create Canvas Element
 function createCanvas() {
@@ -45,11 +46,11 @@ function createCanvas() {
   canvas.width = width;
   canvas.height = height;
   document.body.appendChild(canvas);
-  renderCanvas();
 }
 
 // Wait for Opponents
 function renderIntro() {
+  console.log('rendering intro');
   // Canvas Background
   context.fillStyle = "black";
   context.fillRect(0, 0, width, height);
@@ -62,6 +63,9 @@ function renderIntro() {
 
 // Render Everything on Canvas
 function renderCanvas() {
+  console.log("rendering canvas");
+  
+
   // Canvas Background
   context.fillStyle = "black";
   context.fillRect(0, 0, width, height);
@@ -178,7 +182,9 @@ function animate() {
     ballBoundaries();
   }
   renderCanvas();
-  req = window.requestAnimationFrame(animate);
+  if (!exit) {
+    req = requestAnimationFrame(animate);
+  }
 }
 
 // Load Game, Reset Everything
@@ -205,12 +211,13 @@ function listener(e: any) {
   canvas.style.cursor = "none";
 }
 function startGame() {
+  exit = false;
   if (referee == window.webxdc.selfAddr) {
     paddleIndex = 0;
   } else if (opponent == window.webxdc.selfAddr) {
     paddleIndex = 1;
   }
-  window.requestAnimationFrame(animate);
+  requestAnimationFrame(animate);
   if (referee == window.webxdc.selfAddr || opponent == window.webxdc.selfAddr) {
     canvas.addEventListener("mousemove", listener);
   }
@@ -235,6 +242,10 @@ export function doBallMove(ballData: any): void {
 }
 
 export function doEndGame() {
+  exit = true;
+  cancelAnimationFrame(req);
+  requestAnimationFrame(renderIntro);
+
   referee = "";
   opponent = "";
   paddleIndex = 0;
@@ -247,7 +258,8 @@ export function doEndGame() {
   speedY = 2;
   speedX = 0;
   score = [0, 0];
-  window.cancelAnimationFrame(req);
+  console.log("ending game", req);
+
   canvas.removeEventListener("mousemove", listener);
   renderIntro();
   set_ready();

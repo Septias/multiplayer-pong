@@ -22,6 +22,7 @@ interface startGameMessage {
   type: MessageType.StartGame;
   refereeId: string;
   opponent: string;
+  queue: string[];
 }
 
 function isStartGameMessage(msg: any): msg is startGameMessage {
@@ -91,9 +92,9 @@ function maybe_start_game() {
       type: MessageType.StartGame,
       refereeId: opponents[0],
       opponent: opponents[1],
+      queue: players
     });
     referee = opponents[0];
-    opponent = opponents[1];
     doStartGame(opponents[0], opponents[1]);
   }
 }
@@ -113,12 +114,16 @@ realtime.setListener((enc_msg: Uint8Array) => {
   } else if (isStartGameMessage(update)) {
     console.log("Game starting");
     referee = update.refereeId;
+    opponent = update.opponent;
+    players = update.queue;
     doStartGame(update.refereeId, update.opponent);
   } else if (isPaddleMoveMessage(update)) {
     doPaddleMove(update);
   } else if (isBallMoveMessage(update)) {
     // ball moves are supposed to be spammed by the referee
     if (window.webxdc.selfAddr === opponent) {
+      console.log("opponent");
+
       clearTimeout(timout);
       timout = setTimeout(() => {
         console.log("game timeout");
@@ -159,6 +164,7 @@ export function game_over(winner: string, loser: string) {
       type: MessageType.StartGame,
       refereeId: opponents[0],
       opponent: opponents[1],
+      queue: players
     });
     doStartGame(opponents[0], opponents[1]);
   } else {
