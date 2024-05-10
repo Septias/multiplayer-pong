@@ -206,7 +206,10 @@ function listener(e: any) {
   // Hide Cursor
   canvas.style.cursor = "none";
 }
+
 function startGame() {
+  console.log("requesting animation frame");
+
   exit = false;
   if (referee == window.webxdc.selfAddr) {
     paddleIndex = 0;
@@ -223,7 +226,7 @@ function startGame() {
 loadGame();
 
 export function doStartGame(refereeId: string, opponentId: string) {
-  console.log(`referee: ${refereeId} \n player: ${opponentId}`);
+  console.log(`Game starting between ${refereeId} and ${opponentId}`);
   referee = refereeId;
   opponent = opponentId;
   startGame();
@@ -254,7 +257,7 @@ export function doEndGame() {
   speedY = 2;
   speedX = 0;
   score = [0, 0];
-  console.log("ending game", req);
+  console.log("ending game");
 
   canvas.removeEventListener("mousemove", listener);
   renderIntro();

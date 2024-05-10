@@ -69,9 +69,11 @@ type messages =
   | startGameMessage
   | GameOverMessage;
 
-let players: string[] = [];
-let referee: string = window.webxdc.selfAddr;
-let opponent: string = "";
+let players: string[] = []; // A list of currently waiting players
+players.push(window.webxdc.selfAddr);
+
+let referee: string; // The referee starts new games
+let opponent: string; // used to timeout the opponent when no messages are received
 
 let realtime = window.webxdc.joinRealtimeChannel();
 let timout: number; // used to timeout if referee leaves (edge case)
@@ -80,15 +82,17 @@ let playing = false;
 let enc = new TextEncoder();
 let dec = new TextDecoder();
 
-players.push(window.webxdc.selfAddr);
-sendGossip({ type: MessageType.Ready, player: window.webxdc.selfAddr });
-
 let interval = setInterval(() => {
   sendGossip({ type: MessageType.Ready, player: window.webxdc.selfAddr });
-}, 500);
+}, 1000);
+
+sendGossip({ type: MessageType.Ready, player: window.webxdc.selfAddr });
+let refree_to = setTimeout(() => (referee = window.webxdc.selfAddr), 1000);
 
 function maybe_start_game() {
-  if (referee == window.webxdc.selfAddr && players.length >= 2 && !playing) {
+  if (referee === window.webxdc.selfAddr && players.length >= 2 && !playing) {
+    console.log("I'm starting a game");
+
     let opponents = players.splice(0, 2);
     sendGossip({
       type: MessageType.StartGame,
@@ -105,18 +109,22 @@ function maybe_start_game() {
 realtime.setListener((enc_msg: Uint8Array) => {
   let update = JSON.parse(dec.decode(enc_msg));
   clearInterval(interval);
+  clearTimeout(refree_to);
+  interval = setInterval(() => {
+    sendGossip({ type: MessageType.Ready, player: window.webxdc.selfAddr });
+  }, 1000);
 
   if (isReadyMessage(update)) {
-    // stop interval
+    console.log("Player ready", update.player);
     if (players.find((p) => p === update.player)) {
       return;
     }
-    console.log("Player added", update.player);
+    console.log("Adding player to queue", update.player);
     players.push(update.player);
     maybe_start_game();
   } else if (isStartGameMessage(update)) {
+    console.log("received game start message");
     playing = true;
-    console.log("Game starting");
     referee = update.refereeId;
     opponent = update.opponent;
     players = update.queue;
@@ -124,19 +132,20 @@ realtime.setListener((enc_msg: Uint8Array) => {
   } else if (isPaddleMoveMessage(update)) {
     doPaddleMove(update);
   } else if (isBallMoveMessage(update)) {
+    referee = "";
+
     // ball moves are supposed to be spammed by the referee
     if (window.webxdc.selfAddr === opponent) {
-      console.log("opponent");
-
       clearTimeout(timout);
       timout = setTimeout(() => {
         console.log("game timeout");
+        playing = false;
+        players = players.filter((p) => p === referee);
         referee = window.webxdc.selfAddr;
         doEndGame();
         maybe_start_game();
       }, 500);
     }
-    referee = "";
     doBallMove(update);
   } else if (isGameOverMessage(update)) {
     console.log("Game Over");
