@@ -4,7 +4,7 @@ import {
   game_over,
   sendGossip,
   set_ready,
-} from "./backend";
+} from "./communication";
 
 // Canvas Related
 const canvas = document.createElement("canvas");
@@ -39,6 +39,7 @@ let speedX = 0;
 // Score for Both Players
 let score = [0, 0];
 let exit = false;
+
 
 // Create Canvas Element
 function createCanvas() {

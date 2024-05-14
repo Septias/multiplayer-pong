@@ -100,8 +100,10 @@ window.webxdc = (() => {
       if (realtimeListener && realtimeListener.is_trashed()) {
         return;
       }
-      realtimeListener = new RealtimeListener();
-      return realtimeListener;
+      rt = new RealtimeListener();
+      // mimic connection establishment time
+      setTimeout(() => realtimeListener = rt, 500);
+      return rt;
     },
     getAllUpdates: () => {
       console.log("[Webxdc] WARNING: getAllUpdates() is deprecated.");
@@ -279,7 +281,7 @@ window.alterXdcApp = () => {
   }
   title.innerText = window.webxdc.selfAddr;
 
-  if (window.webxdc.selfName === "device0") {
+  if (window.webxdc.selfName === "device0" && false) {
     var root = document.createElement("section");
     root.innerHTML =
       '<div id="webxdc-panel" style="' +

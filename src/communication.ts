@@ -1,4 +1,4 @@
-import { doBallMove, doPaddleMove, doStartGame, doEndGame } from "./script";
+import { doBallMove, doPaddleMove, doStartGame, doEndGame } from "./pong";
 
 export enum MessageType {
   Ready,
